@@ -35,7 +35,7 @@ public class Person {
                 }
             }
         }
-        if(spouseId != null) {this.spouseId = rawData.spouseId;}
+        if(rawData.spouseId != null) {this.spouseId = rawData.spouseId;}
 
         for(String id : rawData.collectParentIds(nameToIds, personsById)){
             if(personsById.get(id).isMale()){

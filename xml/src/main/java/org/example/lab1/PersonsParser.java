@@ -17,6 +17,13 @@ public class PersonsParser {
     public Map<String, Person> convert(String path) throws XMLStreamException, FileNotFoundException {
         ArrayList<PersonRaw> personsRawData = parse(path);
 
+        ArrayList<PersonRaw> chetlist = new ArrayList<>();
+        for(PersonRaw person : personsRawData){
+            if((person.firstName != null && person.lastName!= null && person.getName().equals("Chet Hoerig"))
+                    || (person.id != null && person.id.equals("P403398"))){
+                chetlist.add(person);
+            }
+        }
         Map<String, PersonRaw> personsById = new HashMap<>();
         Map<String, Set<PersonRaw>> personsByName = new HashMap<>();
         Map<String, Set<String>> nameToIds = new HashMap<>();
@@ -38,34 +45,46 @@ public class PersonsParser {
             (nameToIds.get(person.getName())).add(person.id);
         }
 
-        Set<PersonRaw> ambiguousPersons = new HashSet<>();
         for (PersonRaw person : personsById.values()) {
             if (personsByName.containsKey(person.getName())) {
-                if (nameToIds.get(person.getName()).size() == 1) {
-                    Set<PersonRaw> curSet = new HashSet<>(personsByName.get(person.getName()));
-                    for (PersonRaw personFound : curSet) {
-                        personsById.merge(person.id, personFound, PersonRaw::mergePersons);
-                        personsByName.get(person.getName()).remove(personFound);
-                        if (personsByName.get(person.getName()).isEmpty()) {
-                            personsByName.remove(person.getName());
-                        }
-                    }
-                }
-                else{
-                    ambiguousPersons.add(person);
-                }
-            }
-        }
-
-        for (PersonRaw person : ambiguousPersons) {
-            if (personsByName.containsKey(person.getName())) {
-                Set<PersonRaw> curSet = new HashSet<>(personsByName.get(person.getName()));
-                for (PersonRaw personFound : curSet) {
+                for (PersonRaw personFound : personsByName.get(person.getName())) {
                     personsById.merge(person.id, personFound, PersonRaw::mergePersons);
                 }
             }
         }
 
+
+
+//        Set<PersonRaw> ambiguousPersons = new HashSet<>();
+//        for (PersonRaw person : personsById.values()) {
+//            if (personsByName.containsKey(person.getName())) {
+//                if (nameToIds.get(person.getName()).size() == 1) {
+//                    Set<PersonRaw> curSet = new HashSet<>(personsByName.get(person.getName()));
+//                    for (PersonRaw personFound : curSet) {
+//                        personsById.merge(person.id, personFound, PersonRaw::mergePersons);
+//                        personsByName.get(person.getName()).remove(personFound);
+//                        if (personsByName.get(person.getName()).isEmpty()) {
+//                            personsByName.remove(person.getName());
+//                        }
+//                    }
+//                }
+//                else{
+//                    ambiguousPersons.add(person);
+//                }
+//            }
+//        }
+//
+//        for (PersonRaw person : ambiguousPersons) {
+//            if (personsByName.containsKey(person.getName())) {
+//                Set<PersonRaw> curSet = new HashSet<>(personsByName.get(person.getName()));
+//                for (PersonRaw personFound : curSet) {
+//                    personsById.merge(person.id, personFound, PersonRaw::mergePersons);
+//                }
+//            }
+//        }
+//
+//
+//
 //        for (PersonRaw person : ambiguousPersons) {
 //            if (personsByName.containsKey(person.getName())) {
 //                Set<PersonRaw> curSet = new HashSet<>(personsByName.get(person.getName()));

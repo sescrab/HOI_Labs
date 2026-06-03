@@ -93,7 +93,7 @@ public class PersonRaw {
         for(String name : parentsNames){
             for(String id : nameToIds.get(name)){
                 PersonRaw person = personsById.get(id);
-                if(person.isParent(id, nameToIds)){
+                if(person.isParent(this.id, nameToIds)){
                     ans.add(id);
                 }
             }
@@ -105,7 +105,7 @@ public class PersonRaw {
         for(String name : siblingsNames){
             for(String id : nameToIds.get(name)){
                 PersonRaw person = personsById.get(id);
-                if(person.isSibling(id, nameToIds)){
+                if(person.isSibling(this.id, nameToIds)){
                     ans.add(id);
                 }
             }
@@ -117,7 +117,7 @@ public class PersonRaw {
         for(String name : childrenNames){
             for(String id : nameToIds.get(name)){
                 PersonRaw person = personsById.get(id);
-                if(person.isChild(id, nameToIds)){
+                if(person.isChild(this.id, nameToIds)){
                     ans.add(id);
                 }
             }
