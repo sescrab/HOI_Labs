@@ -1,0 +1,298 @@
+openapi: 3.0.3
+info:
+  title: Aviasales
+  version: 1.0.0
+
+paths:
+  /cities:
+    get:
+      summary: List all the available source and destination cities
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/City'
+
+  /airports:
+    get:
+      summary: List all the available source and destination airports
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Airport'
+
+  /airports/{city}:
+    get:
+      summary: List the airports within a city
+      parameters:
+        - name: city
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Airport'
+        '400':
+          description: Указан несуществующий город
+          
+
+  /airports/{airport_code}/schedule/inbound:
+    get:
+      summary: List the inbound schedule for an airport
+      parameters:
+        - name: airport_code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InboundFlight'
+        '400':
+          description: Указан неверный аэропорт
+
+  /airports/{airport_code}/schedule/outbound:
+    get:
+      summary: List the outbound schedule for an airport
+      parameters:
+        - name: airport_code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutboundFlight'
+        '400':
+          description: Указан неверный аэропорт
+
+  /routes/search:
+    get:
+      summary: List the routes connecting two points
+      parameters:
+        - name: from
+          in: query
+          description: Может быть как названием города, так и кодом аэропорта
+          required: true
+          schema: 
+            type: string
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: departure_date
+          in: query
+          required: true
+          schema: 
+            type: string
+        - name: booking_class
+          in: query
+          required: true
+          schema: 
+            type: string
+            enum: [Economy, Comfort, Business]
+        - name: max_segments
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RouteResult'
+        '400':
+          description: Указаны неверные параметры
+
+  /booking:
+    post:
+      summary: Create a booking for a selected route for a single passenger
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingResult'
+        '404':
+          description: Некоторые рейсы не найдены
+
+  /check-in:
+    put:
+      summary: Online check-in for a flight
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoardingPass'
+        '400':
+          description: Указаны неверные параметры
+
+components:
+  schemas:
+    City:
+      type: object
+      properties:
+        city_name: 
+          type: string
+
+    Airport:
+      type: object
+      properties:
+        airportCode:
+          type: string
+        airportName:
+          type: string
+        city:
+          type: string
+
+    InboundFlight:
+      type: object
+      properties:
+        daysOfWeek:
+          type: array
+          items:
+            type: integer
+        timeOfArrival:
+          type: string
+        flightNo:
+          type: string
+        origin:
+          type: string
+
+    OutboundFlight:
+      type: object
+      properties:
+        daysOfWeek:
+          type: array
+          items:
+            type: integer
+        timeOfDeparture:
+          type: string
+        flightNo:
+          type: string
+        destination:
+          type: string
+
+    RouteResult:
+      type: object
+      properties:
+        flights_amount:
+          type: integer
+        total_price:
+          type: number
+        flights:
+          type: array
+          items:
+            $ref: '#/components/schemas/Flight'
+
+    Flight:
+      type: object
+      properties:
+        flight_id:
+          type: integer
+        departure_airport:
+          type: string
+        departure_city:
+          type: string
+        arrival_airport:
+          type: string
+        arrival_city:
+          type: string
+        scheduled_departure_time:
+          type: string
+          format: date-time
+        scheduled_arrival_time:
+          type: string
+          format: date-time
+        price:
+          type: number
+          
+    BookingRequest:
+      type: object
+      properties:
+        passenger_id:
+          type: string
+        passenger_name:
+          type: string
+        booking_class:
+          type: string
+          enum: [Economy, Comfort, Business]
+        flight_ids:
+          type: array
+          items:
+            type: integer
+
+    BookingResult:
+      type: object
+      properties:
+        book_ref:
+          type: string
+
+    CheckInRequest:
+      type: object
+      properties:
+        ticket_no:
+          type: string
+        flight_id:
+          type: integer
+        seat_no:
+          type: string
+
+    BoardingPass:
+      type: object
+      properties:
+        boarding_no:
+          type: integer
+        seat_no:
+          type: string
+        boarding_time:
+          type: string
+          format: date-time
