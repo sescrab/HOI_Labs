@@ -9,21 +9,12 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.*;
 
-import static org.example.lab1.PersonRaw.hasNoContradiction;
-
 public class PersonsParser {
     XMLStreamReader reader;
 
     public Map<String, Person> convert(String path) throws XMLStreamException, FileNotFoundException {
         ArrayList<PersonRaw> personsRawData = parse(path);
 
-        ArrayList<PersonRaw> chetlist = new ArrayList<>();
-        for(PersonRaw person : personsRawData){
-            if((person.firstName != null && person.lastName!= null && person.getName().equals("Chet Hoerig"))
-                    || (person.id != null && person.id.equals("P403398"))){
-                chetlist.add(person);
-            }
-        }
         Map<String, PersonRaw> personsById = new HashMap<>();
         Map<String, Set<PersonRaw>> personsByName = new HashMap<>();
         Map<String, Set<String>> nameToIds = new HashMap<>();
@@ -52,74 +43,6 @@ public class PersonsParser {
                 }
             }
         }
-
-
-
-//        Set<PersonRaw> ambiguousPersons = new HashSet<>();
-//        for (PersonRaw person : personsById.values()) {
-//            if (personsByName.containsKey(person.getName())) {
-//                if (nameToIds.get(person.getName()).size() == 1) {
-//                    Set<PersonRaw> curSet = new HashSet<>(personsByName.get(person.getName()));
-//                    for (PersonRaw personFound : curSet) {
-//                        personsById.merge(person.id, personFound, PersonRaw::mergePersons);
-//                        personsByName.get(person.getName()).remove(personFound);
-//                        if (personsByName.get(person.getName()).isEmpty()) {
-//                            personsByName.remove(person.getName());
-//                        }
-//                    }
-//                }
-//                else{
-//                    ambiguousPersons.add(person);
-//                }
-//            }
-//        }
-//
-//        for (PersonRaw person : ambiguousPersons) {
-//            if (personsByName.containsKey(person.getName())) {
-//                Set<PersonRaw> curSet = new HashSet<>(personsByName.get(person.getName()));
-//                for (PersonRaw personFound : curSet) {
-//                    personsById.merge(person.id, personFound, PersonRaw::mergePersons);
-//                }
-//            }
-//        }
-//
-//
-//
-//        for (PersonRaw person : ambiguousPersons) {
-//            if (personsByName.containsKey(person.getName())) {
-//                Set<PersonRaw> curSet = new HashSet<>(personsByName.get(person.getName()));
-//                for (PersonRaw personFound : curSet) {
-//                    if (hasNoContradiction(person, personFound, nameToIds, personsById)) {
-//                        personsById.merge(person.id, personFound, PersonRaw::mergePersons);
-//                        personsByName.get(person.getName()).remove(personFound);
-//                        if (personsByName.get(person.getName()).isEmpty()) {
-//                            personsByName.remove(person.getName());
-//                        }
-//                    }
-//                }
-//            }
-//        }
-
-//        if(!personsByName.isEmpty()){
-//            int c = 0;
-//            for(Set<PersonRaw> s : personsByName.values()){c += s.size();}
-//            System.out.println("WARNING! Could not decide ambiguity completely. Errors: " + c);
-//            //Принудительное разрешение неоднозначностей
-//            for (PersonRaw person : personsById.values()) {
-//                if (personsByName.containsKey(person.getName())) {
-//                    Set<PersonRaw> curSet = new HashSet<>(personsByName.get(person.getName()));
-//                    for (PersonRaw personFound : curSet) {
-//                        personsById.merge(person.id, personFound, PersonRaw::mergePersons);
-//                        personsByName.get(person.getName()).remove(personFound);
-//                        if (personsByName.get(person.getName()).isEmpty()) {
-//                            personsByName.remove(person.getName());
-//                        }
-//                    }
-//                }
-//            }
-//        }
-
-
 
         Map<String, Person> res = new HashMap<>();
         for(PersonRaw person : personsById.values()){
