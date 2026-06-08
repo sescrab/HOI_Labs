@@ -84,8 +84,6 @@ public class Main {
         res.firstName = person.firstName;
         res.lastName = person.lastName;
         res.SetGender(person.gender);
-        res.childrenAmount = person.childrenAmount;
-        res.siblingsAmount = person.siblingsAmount;
 
         if (person.spouseId != null){
             res.spouseRef = person.spouseId;

@@ -20,9 +20,6 @@ public class PersonType {
     @XmlElement(required = true)
     public Gender gender;
 
-    public Integer childrenAmount;
-    public Integer siblingsAmount;
-
     public String spouseRef;
     public String fatherRef;
     public String motherRef;

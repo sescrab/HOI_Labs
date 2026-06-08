@@ -1,0 +1,47 @@
+@startuml
+
+entity "Person" {
+  * id : ID
+  --
+  * first_name : string
+  * last_name : string
+  * gender : enum {M,F,UNKNOWN}
+}
+
+entity "SonRef" {
+  * sonRef : ID
+}
+
+entity "DaughterRef" {
+  * daughterRef : ID
+}
+
+entity "BrotherRef" {
+  * brotherRef : ID
+}
+
+entity "SisterRef" {
+  * sisterRef : ID
+}
+
+entity "SpouseRef" {
+  * sisterRef : ID
+}
+
+entity "MotherRef" {
+  * sisterRef : ID
+}
+
+entity "FatherRef" {
+  * sisterRef : ID
+}
+
+Person ||--o{ SonRef
+Person ||--o{ DaughterRef
+Person ||--o{ BrotherRef
+Person ||--o{ SisterRef 
+Person |o--o| SpouseRef
+Person }o--|| FatherRef
+Person }o--|| MotherRef
+
+@enduml

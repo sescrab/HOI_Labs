@@ -50,7 +50,7 @@ paths:
                   $ref: '#/components/schemas/Airport'
         '400':
           description: Указан несуществующий город
-          
+
 
   /airports/{airport_code}/schedule/inbound:
     get:
@@ -69,7 +69,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/InboundFlight'
+                  $ref: '#/components/schemas/ScheduleRoute'
         '400':
           description: Указан неверный аэропорт
 
@@ -90,7 +90,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/OutboundFlight'
+                  $ref: '#/components/schemas/ScheduleRoute'
         '400':
           description: Указан неверный аэропорт
 
@@ -102,7 +102,7 @@ paths:
           in: query
           description: Может быть как названием города, так и кодом аэропорта
           required: true
-          schema: 
+          schema:
             type: string
         - name: to
           in: query
@@ -112,15 +112,16 @@ paths:
         - name: departure_date
           in: query
           required: true
-          schema: 
+          schema:
             type: string
+            format: date
         - name: booking_class
           in: query
           required: true
-          schema: 
+          schema:
             type: string
             enum: [Economy, Comfort, Business]
-        - name: max_segments
+        - name: max_connections
           in: query
           schema:
             type: integer
@@ -153,6 +154,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BookingResult'
+        '400':
+          description: Указаны неверные данные
         '404':
           description: Некоторые рейсы не найдены
 
@@ -180,43 +183,31 @@ components:
     City:
       type: object
       properties:
-        city_name: 
+        city:
           type: string
 
     Airport:
       type: object
       properties:
-        airportCode:
+        airport_code:
           type: string
-        airportName:
+        airport_name:
           type: string
         city:
           type: string
 
-    InboundFlight:
+    ScheduleRoute:
       type: object
       properties:
-        daysOfWeek:
+        days_of_week:
           type: array
           items:
             type: integer
-        timeOfArrival:
+        time:
           type: string
-        flightNo:
+        flight_no:
           type: string
         origin:
-          type: string
-
-    OutboundFlight:
-      type: object
-      properties:
-        daysOfWeek:
-          type: array
-          items:
-            type: integer
-        timeOfDeparture:
-          type: string
-        flightNo:
           type: string
         destination:
           type: string
@@ -238,14 +229,6 @@ components:
       properties:
         flight_id:
           type: integer
-        departure_airport:
-          type: string
-        departure_city:
-          type: string
-        arrival_airport:
-          type: string
-        arrival_city:
-          type: string
         scheduled_departure_time:
           type: string
           format: date-time
@@ -254,7 +237,7 @@ components:
           format: date-time
         price:
           type: number
-          
+
     BookingRequest:
       type: object
       properties:
@@ -274,6 +257,24 @@ components:
       type: object
       properties:
         book_ref:
+          type: string
+        ticket:
+            $ref: '#/components/schemas/Ticket'
+    Ticket:
+      type: object
+      properties:
+        ticket_no:
+          type: string
+        setments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Segment'
+    Segment:
+      type: object
+      properties:
+        flight_id:
+          type: number
+        fare_conditions:
           type: string
 
     CheckInRequest:

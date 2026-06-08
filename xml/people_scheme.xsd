@@ -24,8 +24,6 @@
             <xs:element name="firstName" type="xs:string"/>
             <xs:element name="lastName" type="xs:string"/>
             <xs:element name="gender" type="GenderType"/>
-            <xs:element name="childrenAmount" type="xs:integer" minOccurs="0"/>
-            <xs:element name="siblingsAmount" type="xs:integer" minOccurs="0"/>
 
             <xs:element name="spouseRef" type="xs:IDREF" minOccurs="0"/>
             <xs:element name="fatherRef" type="xs:IDREF" minOccurs="0"/>
