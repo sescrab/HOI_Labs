@@ -12,10 +12,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.awt.print.Book;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController

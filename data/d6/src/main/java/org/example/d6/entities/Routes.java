@@ -29,6 +29,9 @@ public class Routes {
     @JoinColumn(name = "arrival_airport", nullable = false)
     private AirportsData arrivalAirport;
 
+    @Column(name = "airplane_code", nullable = false)
+    private String airplaneCode;
+
     @Convert(converter = IntegerArrayConverter.class)
     @Column(name = "days_of_week", nullable = false, columnDefinition = "integer[]")
     private Integer[] daysOfWeek;

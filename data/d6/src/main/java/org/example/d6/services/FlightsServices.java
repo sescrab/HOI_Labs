@@ -35,6 +35,7 @@ public class FlightsServices {
     private final BookingsRepository bookingsRepository;
     private final BoardingPassesRepository boardingPassesRepository;
     private final PricingRulesRepository pricingRulesRepository;
+    private final SeatsRepository seatsRepository;
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     public List<City> collectCities(){
@@ -190,20 +191,32 @@ public class FlightsServices {
     }
 
 
-    @Transactional
+    @Transactional()
     public Booking createBooking(BookingRequest request) {
-        String bookRef = generateBookRef();
+        List<Flights> flights = new ArrayList<>();
+        double totalPrice = 0.0;
 
-        Double totalAmount = 0d;
         for (Integer flightId : request.getFlightIds()) {
-            Double price = getPriceForFlightAndClass(flightId, request.getBookingClass());
-            totalAmount += price;
+            Flights flight = flightsRepository.findAndLockById(flightId)
+                    .orElseThrow(() -> new EntityNotFoundException("Flight not found: " + flightId));
+
+            if (flight.getStatus() != Flights.FlightStatus.Scheduled) {
+                throw new IllegalStateException("Flight " + flightId + " is not available for booking");
+            }
+
+            PricingRules priceRule = pricingRulesRepository
+                    .findAndLockByRouteNoAndFareConditions(flight.getRouteNo(), request.getBookingClass())
+                    .orElseThrow(() -> new EntityNotFoundException("Price rule not found for route " + flight.getRouteNo()));
+            totalPrice += priceRule.getMaxPrice();
+            flights.add(flight);
         }
 
+
+        String bookRef = generateBookRef();
         Bookings booking = new Bookings();
         booking.setBookRef(bookRef);
         booking.setBookDate(OffsetDateTime.now());
-        booking.setTotalAmount(totalAmount);
+        booking.setTotalAmount(totalPrice);
         bookingsRepository.save(booking);
 
         String ticketNo = generateTicketNo();
@@ -216,59 +229,71 @@ public class FlightsServices {
         ticketsRepository.save(ticket);
 
         Ticket responseTicket = new Ticket(ticket.getTicketNo(), new ArrayList<>());
-        for (Integer flightId : request.getFlightIds()) {
-            Flights flight = flightsRepository.findById(flightId)
-                    .orElseThrow(() -> new EntityNotFoundException("Flight not found: " + flightId));
-            Double price = getPriceForFlightAndClass(flightId, request.getBookingClass());
-
-            SegmentsId segId = new SegmentsId(ticketNo, flightId);
+        for (Flights flight : flights) {
+            SegmentsId segId = new SegmentsId(ticketNo, flight.getFlightId());
             Segments segment = new Segments();
             segment.setId(segId);
             segment.setTicket(ticket);
             segment.setFlight(flight);
-
-            String bookingClass = request.getBookingClass();
-            Segments.FareCondition fareCondition;
-            try {
-                fareCondition = Segments.FareCondition.valueOf(bookingClass);
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid booking class: " + bookingClass + ". Allowed: Economy, Comfort, Business");
-            }
-            segment.setFareConditions(fareCondition);
-
-            segment.setPrice(price);
+            segment.setFareConditions(Segments.FareCondition.valueOf(request.getBookingClass()));
+            segment.setPrice(getPriceForFlightAndClass(flight.getFlightId(), request.getBookingClass()));
             segmentsRepository.save(segment);
-
-            responseTicket.getSegments().add(new Segment(flight.getFlightId(), bookingClass));
+            responseTicket.getSegments().add(new Segment(flight.getFlightId(), request.getBookingClass()));
         }
 
         return new Booking(bookRef, responseTicket);
     }
 
-    @Transactional
+    @Transactional()
     public Boarding checkIn(CheckinRequest request) {
-        SegmentsId segId = new SegmentsId(request.getTicketNo(), request.getFlightId());
-        Segments segment = segmentsRepository.findById(segId)
-                .orElseThrow(() -> new IllegalArgumentException("Segment not found"));
+        Flights lockedFlight = flightsRepository.findAndLockById(request.getFlightId()).orElseThrow(
+                () -> new EntityNotFoundException("Flight not found" + request.getFlightId()));
 
-        boolean validSeat = isValidSeatNumber(request.getSeatNo());
-        if (!validSeat) {
-            throw new IllegalArgumentException("Wrong seat number format: " + request.getSeatNo());
+        Optional<BoardingPasses> possiblePass = boardingPassesRepository.findById(
+                new BoardingPassesId(request.getTicketNo(), request.getFlightId()));
+        if(possiblePass.isPresent()){
+            BoardingPasses pass = possiblePass.get();
+            return new Boarding(pass.getBoardingNo(), pass  .getSeatNo(),
+                    pass.getBoardingTime().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
 
-        Integer maxBoardingNo = boardingPassesRepository.findMaxBoardingNoByFlightId(request.getFlightId()).orElse(0);
-        Integer boardingNo = maxBoardingNo + 1;
+
+        SegmentsId segId = new SegmentsId(request.getTicketNo(), request.getFlightId());
+        Segments segment = segmentsRepository.findById(segId)
+                .orElseThrow(() -> new IllegalArgumentException("Ticket not found for the flight"));
+
+        Optional<BoardingPasses> existing = boardingPassesRepository
+                .findAndLockByFlightIdAndSeatNo(request.getFlightId(), request.getSeatNo());
+        if (existing.isPresent()) {
+            throw new IllegalArgumentException("Seat " + request.getSeatNo() + " is already taken");
+        }
+
+        Routes route = routesRepository.findByRouteNoAndValidityContains
+                (lockedFlight.getRouteNo(), lockedFlight.getScheduledDeparture()).orElseThrow();
+        Seats seat = seatsRepository.findById(new SeatsId(route.getAirplaneCode(), request.getSeatNo())).orElseThrow(
+                () -> new EntityNotFoundException("Seat does not exist"));
+        if(!seat.getFareConditions().equals(segment.getFareConditions())){
+            throw new IllegalArgumentException("Selected seat with incorrect fare condition");
+        }
+
+        List<BoardingPasses> existingPasses = boardingPassesRepository.findAllAndLockByFlightId(request.getFlightId());
+        int maxno = 1;
+        for(BoardingPasses pass : existingPasses){
+            if(pass.getBoardingNo() >= maxno){
+                maxno = pass.getBoardingNo() + 1;
+            }
+        }
 
         BoardingPassesId bpId = new BoardingPassesId(request.getTicketNo(), request.getFlightId());
         BoardingPasses boardingPass = new BoardingPasses();
         boardingPass.setId(bpId);
         boardingPass.setSeatNo(request.getSeatNo());
-        boardingPass.setBoardingNo(boardingNo);
+        boardingPass.setBoardingNo(maxno);
         boardingPass.setBoardingTime(OffsetDateTime.now());
 
         boardingPassesRepository.save(boardingPass);
 
-        return new Boarding(boardingNo, request.getSeatNo(),
+        return new Boarding(maxno, request.getSeatNo(),
                 boardingPass.getBoardingTime().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
     }
 
@@ -286,19 +311,5 @@ public class FlightsServices {
 
     private String generateTicketNo() {
         return UUID.randomUUID().toString().substring(0, 13);
-    }
-
-    public static boolean isValidSeatNumber(String seatNo) {
-        if (seatNo == null || seatNo.isBlank()) {
-            return false;
-        }
-        return seatNo.matches("^[0-9]{1,2}[A-Z]$");
-    }
-
-    private boolean isAirportCode(String text){
-        if (text == null || text.isBlank()) {
-            return false;
-        }
-        return text.matches("^[A-Z]{3}");
     }
 }
